@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import argparse
+from datetime import date
+import json
+import urllib.request
+
+SODEXO_BASE_URL = "https://www.sodexo.fi/ruokalistat/output/daily_json"
+
+def get_menu(restaurant_id, menu_date):
+    url = f"{SODEXO_BASE_URL}/{restaurant_id}/{menu_date}"
+    # Sodexo is kind enough to offer a machine-readable format of their menu but blocks Urllib's default user agent. Go figure.
+    request = urllib.request.Request(url, headers={
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+    })
+    with urllib.request.urlopen(request) as response:
+        data = response.read()
+        parsed = json.loads(data)
+        return parsed
+
+def format_course(course):
+    formatted = course['title_fi']
+    if course['properties']:
+        formatted += f" ({course['properties']})"
+    formatted += f" {course['price']}"
+    return formatted
+
+def format_courses(courses):
+    formatted_courses = []
+    for course in courses.values():
+        formatted_courses.append(format_course(course))
+    return formatted_courses
+
+def print_menu(restaurant_name, courses):
+    print(f"{restaurant_name}:")
+    for course in courses:
+        print(f"* {course}")
+
+def parse_arguments():
+    today = date.today().strftime("%Y-%m-%d")
+    parser = argparse.ArgumentParser(description="Have a Sodexo menu at your terminal.")
+    parser.add_argument("-r", "--restaurant", type=str, required=True, help="The restaurant id")
+    parser.add_argument("-d", "--date", type=str, help="The date of the menu in yyyy-mm-dd format. Defaults to today.", default=today)
+    return parser
+
+def main():
+    parser = parse_arguments()
+    args = parser.parse_args()
+    menu = get_menu(restaurant_id=args.restaurant, menu_date=args.date)
+    courses = format_courses(menu['courses'])
+    print_menu(restaurant_name=menu['meta']['ref_title'], courses=courses)
+
+if __name__ == "__main__":
+    main()

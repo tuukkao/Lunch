@@ -27,7 +27,7 @@ def format_course(course):
 
 def format_courses(courses):
     formatted_courses = []
-    for course in courses.values():
+    for course in courses:
         formatted_courses.append(format_course(course))
     return formatted_courses
 

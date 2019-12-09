@@ -3,6 +3,7 @@
 import argparse
 from datetime import date
 import json
+import sys
 import urllib.request
 
 SODEXO_BASE_URL = "https://www.sodexo.fi/ruokalistat/output/daily_json"
@@ -47,7 +48,17 @@ def main():
     parser = parse_arguments()
     args = parser.parse_args()
     menu = get_menu(restaurant_id=args.restaurant, menu_date=args.date)
-    courses = format_courses(menu['courses'])
+    course_contents = None
+
+    if type(menu['courses']) == list:
+        course_contents = menu['courses']
+    elif type(menu['courses']) == dict:
+        course_contents = menu['courses'].values()
+    else:
+        print(f"Invalid course format: {type(menu['courses'])}. Exiting.")
+        sys.exit(1)
+
+    courses = format_courses(course_contents)
     print_menu(restaurant_name=menu['meta']['ref_title'], courses=courses)
 
 if __name__ == "__main__":
